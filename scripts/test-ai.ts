@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { callNvidiaAPI } from "../src/nvidia";
+import { getAIFixWithFallback } from "../src/nvidia";
 
 async function runAITest() {
     console.log("🤖 Initiating direct test of the Nvidia NIM AI integration...");
@@ -44,10 +44,10 @@ src/math.ts(5,3): error TS2322: Type 'string' is not assignable to type 'number'
     console.log("🚨 With the following error logs:");
     console.log(mockLogs.trim() + "\n");
 
-    console.log("⏳ Waiting for Nvidia NIM (minimax/minimax-2.5) to generate the fix...\n");
+    console.log("⏳ Waiting for Nvidia NIM AI to generate the fix...\n");
 
     try {
-        const fixedContent = await callNvidiaAPI(apiKey, mockLogs, brokenCode, filePath);
+        const fixedContent = await getAIFixWithFallback(apiKey, mockLogs, brokenCode, filePath);
 
         console.log("✅ AI Fix Received! The raw corrected file content is:");
         console.log("==================================================");

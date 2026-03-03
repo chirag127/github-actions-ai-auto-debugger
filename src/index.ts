@@ -37,7 +37,7 @@ import {
   getInstallationToken,
 } from "./github";
 import { generateJWT } from "./jwt";
-import { callNvidiaAPI } from "./nvidia";
+import { getAIFixWithFallback } from "./nvidia";
 import type { Env, WorkflowRunPayload } from "./types";
 import { verifyWebhookSignature } from "./verify";
 
@@ -170,7 +170,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     console.log(`🤖 Requesting AI fix for ${filePath}`);
 
     // --- Step 11: Get AI Fix ---
-    const fixedContent = await callNvidiaAPI(
+    const fixedContent = await getAIFixWithFallback(
       env.NVIDIA_API_KEY,
       logs,
       fileInfo.content,

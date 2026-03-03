@@ -78,23 +78,55 @@ export async function fetchWithRetry(
 // AI Fix Generation
 // -------------------------------------------
 
-/**
- * Sends the error logs and broken code to the
- * Nvidia NIM API and returns the AI-corrected
- * file content.
- *
- * @param apiKey - Nvidia API key
- * @param logs - Workflow failure logs
- * @param fileContent - The broken file's content
- * @param filePath - Path of the broken file
- * @returns Raw corrected file content (no
- *   markdown, no explanation)
- */
+export async function getAIFixWithFallback(
+  apiKey: string,
+  logs: string,
+  fileContent: string,
+  filePath: string,
+): Promise<string> {
+  const models = [
+    "minimaxai/minimax-m2.5",
+    "z-ai/glm5",
+    "moonshotai/kimi-k2.5",
+  ];
+
+  for (const model of models) {
+    console.log(`🤖 Attempting to fix with model: ${model}`);
+    try {
+      const fixedContent = await callNvidiaAPI(
+        apiKey,
+        logs,
+        fileContent,
+        filePath,
+        model,
+      );
+
+      // If the AI actually made a change, return it.
+      if (fixedContent && fixedContent !== fileContent) {
+        return fixedContent;
+      }
+
+      console.log(
+        `⚠️ Model ${model} failed to solve the issue (returned unchanged code). Falling back...`,
+      );
+    } catch (e) {
+      console.error(`❌ Model ${model} encountered an error:`, e);
+    }
+  }
+
+  // If ALL models fail to make a meaningful change, return the original code
+  console.log(
+    "🚨 All AI models failed to solve the problem. Returning original code.",
+  );
+  return fileContent;
+}
+
 export async function callNvidiaAPI(
   apiKey: string,
   logs: string,
   fileContent: string,
   filePath: string,
+  modelName: string,
 ): Promise<string> {
   const systemPrompt = [
     "You are an expert software debugger.",
@@ -130,16 +162,6 @@ export async function callNvidiaAPI(
     fileContent,
   ].join("\n");
 
-  const body = JSON.stringify({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    temperature: 0.1,
-    max_tokens: 8192,
-  });
-
   const res = await fetchWithRetry(
     "https://integrate.api.nvidia.com/v1/chat/completions",
     {
@@ -149,7 +171,7 @@ export async function callNvidiaAPI(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "minimaxai/minimax-m2.5",
+        model: modelName,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
