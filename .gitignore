@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Wrangler
+.wrangler/
+
+# Local dev secrets (NEVER commit this)
+.dev.vars
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+.env
+biome-errors.txt
