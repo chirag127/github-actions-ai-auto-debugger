@@ -50,16 +50,14 @@ export async function fetchWithRetry(
     // Don't retry non-retryable errors
     if (!retryableStatuses.has(res.status)) {
       const body = await res.text();
-      throw new Error(`Nvidia API error (${res.status}): ` + body);
+      throw new Error(`Nvidia API error (${res.status}): ${body}`);
     }
 
     // Last attempt — throw
     if (attempt === maxRetries) {
       const body = await res.text();
       throw new Error(
-        `Nvidia API failed after ` +
-          `${maxRetries + 1} attempts ` +
-          `(${res.status}): ${body}`,
+        `Nvidia API failed after ${maxRetries + 1} attempts (${res.status}): ${body}`,
       );
     }
 

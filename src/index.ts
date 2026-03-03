@@ -108,14 +108,14 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
   // --- Step 5: Infinite Loop Protection ---
   const senderLogin = payload.sender.login;
   if (isBotSender(senderLogin)) {
-    console.log(`🤖 Skipping bot-triggered run: ` + `${senderLogin}`);
+    console.log(`🤖 Skipping bot-triggered run: ${senderLogin}`);
     return jsonResponse("Bot sender — skipped");
   }
 
   // Also check the commit author if available
   const commitAuthor = run.head_commit?.author?.name ?? "";
   if (isBotSender(commitAuthor)) {
-    console.log(`🤖 Skipping bot commit author: ` + `${commitAuthor}`);
+    console.log(`🤖 Skipping bot commit author: ${commitAuthor}`);
     return jsonResponse("Bot commit author — skipped");
   }
 
@@ -150,7 +150,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     console.warn("⚠️ Could not identify error file paths");
     return jsonResponse("No error files identified");
   }
-  console.log(`📂 Found error files: ` + errorPaths.join(", "));
+  console.log(`📂 Found error files: ${errorPaths.join(", ")}`);
 
   // --- Step 10: Fetch & Fix Each File ---
   for (const filePath of errorPaths) {
@@ -179,7 +179,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
 
     // Skip if AI returned identical content
     if (fixedContent === fileInfo.content) {
-      console.log(`ℹ️ AI returned unchanged ` + `content for ${filePath}`);
+      console.log(`ℹ️ AI returned unchanged content for ${filePath}`);
       continue;
     }
 
