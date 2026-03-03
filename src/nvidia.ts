@@ -65,7 +65,7 @@ export async function fetchWithRetry(
     const delay = BASE_DELAY_MS * 2 ** attempt + Math.random() * 500;
     console.log(
       `⏳ Nvidia API retry ${attempt + 1}` +
-      `/${maxRetries} in ${delay.toFixed(0)}ms`,
+        `/${maxRetries} in ${delay.toFixed(0)}ms`,
     );
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
@@ -166,12 +166,29 @@ export async function callNvidiaAPI(
     throw new Error("Nvidia API returned no choices");
   }
 
-  // Strip any accidental markdown fences
+  // 1. Remove <think>...</think> blocks (reasoning models)
   let content = data.choices[0].message.content;
-  content = content
-    .replace(/^```[\w]*\n?/gm, "")
-    .replace(/\n?```$/gm, "")
-    .trim();
+  content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+
+  // 2. If there are markdown code blocks, extract the last one (usually the final code)
+  const codeBlockRegex = /```[\w]*\n([\s\S]*?)\n```/g;
+  let match: RegExpExecArray | null = codeBlockRegex.exec(content);
+  let lastBlock = "";
+
+  while (match !== null) {
+    lastBlock = match[1];
+    match = codeBlockRegex.exec(content);
+  }
+
+  if (lastBlock) {
+    content = lastBlock.trim();
+  } else {
+    // Fallback: strip accidental fences and conversational text as best effort
+    content = content
+      .replace(/^```[\w]*\n?/gm, "")
+      .replace(/\n?```$/gm, "")
+      .trim();
+  }
 
   return content;
 }
