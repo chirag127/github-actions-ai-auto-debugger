@@ -11,7 +11,7 @@ import type { NvidiaResponse } from "./types";
 
 const NVIDIA_API_URL =
   "https://integrate.api.nvidia.com" + "/v1/chat/completions";
-const MODEL = "minimax/minimax-2.5";
+const MODEL = "minimaxai/minimax-m2.5";
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
@@ -65,7 +65,7 @@ export async function fetchWithRetry(
     const delay = BASE_DELAY_MS * 2 ** attempt + Math.random() * 500;
     console.log(
       `⏳ Nvidia API retry ${attempt + 1}` +
-        `/${maxRetries} in ${delay.toFixed(0)}ms`,
+      `/${maxRetries} in ${delay.toFixed(0)}ms`,
     );
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
@@ -140,14 +140,25 @@ export async function callNvidiaAPI(
     max_tokens: 8192,
   });
 
-  const res = await fetchWithRetry(NVIDIA_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const res = await fetchWithRetry(
+    "https://integrate.api.nvidia.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "minimaxai/minimax-m2.5",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 8192,
+      }),
     },
-    body,
-  });
+  );
 
   const data = (await res.json()) as NvidiaResponse;
 
