@@ -18,7 +18,8 @@
     },
     "files": {
         "include": [
-            "src/**/*.ts"
+            "src/**/*.ts",
+            "scripts/**/*.ts"
         ],
         "ignore": [
             "node_modules",

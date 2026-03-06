@@ -1,26 +1,15 @@
 # ============================================
 # Cloudflare Worker Configuration
-# ============================================
 # Project: GitHub Actions AI Auto-Debugger
-#
-# DEPLOYMENT:
-#   npx wrangler deploy
-#
-# SECRETS SETUP (run these BEFORE deploying):
-#   npx wrangler secret put WEBHOOK_SECRET
-#   npx wrangler secret put GITHUB_APP_ID
-#   npx wrangler secret put GITHUB_PRIVATE_KEY
-#   npx wrangler secret put NVIDIA_API_KEY
-#
-# For local development, create a `.dev.vars`
-# file in the project root with:
-#   WEBHOOK_SECRET=your_webhook_secret
-#   GITHUB_APP_ID=your_app_id
-#   GITHUB_PRIVATE_KEY=your_private_key_pem
-#   NVIDIA_API_KEY=your_nvidia_api_key
 # ============================================
 
 name = "github-actions-ai-auto-debugger"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+
+# SECRETS (run these BEFORE deploying):
+#   npx wrangler secret put WEBHOOK_SECRET
+#   npx wrangler secret put GITHUB_APP_ID
+#   npx wrangler secret put GITHUB_PRIVATE_KEY
+#   npx wrangler secret put NVIDIA_API_KEY

@@ -4,14 +4,15 @@
   "private": true,
   "description": "Deploy-it-yourself GitHub App that auto-debugs failed workflows using Nvidia NIM AI and commits fixes via Cloudflare Workers.",
   "scripts": {
-    "dev": "dotenv -e .env -- wrangler dev",
-    "deploy": "dotenv -e .env -- wrangler deploy",
-    "test": "dotenv -e .env -- vitest run",
-    "test:watch": "dotenv -e .env -- vitest",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run src/__tests__/e2e.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check ./src",
-    "lint:fix": "biome check --fix ./src",
-    "format": "biome format --write ./src"
+    "lint": "biome check ./src ./scripts",
+    "lint:fix": "biome check --fix ./src ./scripts",
+    "format": "biome format --write ./src ./scripts"
   },
   "dependencies": {
     "fflate": "^0.8.2"
