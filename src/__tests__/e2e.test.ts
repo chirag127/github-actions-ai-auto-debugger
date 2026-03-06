@@ -1,16 +1,43 @@
-import { describe, expect, it, vi } from "vitest";
+// E2E Tests — GitHub Actions AI Auto-Debugger
+import { describe, expect, it } from "vitest";
 import worker from "../index";
 
-describe("E2E - GitHub Actions AI Auto-Debugger", () => {
+describe("E2E - Worker Routing", () => {
   const env = {
     WEBHOOK_SECRET: "test-secret",
     GITHUB_APP_ID: "12345",
     GITHUB_PRIVATE_KEY:
-      "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEA7V+...", // Mocked key
+      "-----BEGIN RSA PRIVATE KEY-----\n" +
+      "MIIEogIBAAKCAQEA7V+...\n" +
+      "-----END RSA PRIVATE KEY-----",
     NVIDIA_API_KEY: "nvapi-test",
   };
 
-  it("should handle a valid workflow_run failure and attempt to fix", async () => {
+  it("rejects non-POST methods", async () => {
+    const req = new Request("https://w.local", {
+      method: "GET",
+    });
+    const res = await worker.fetch(req, env as never);
+    expect(res.status).toBe(405);
+    const data = (await res.json()) as { message: string };
+    expect(data.message).toBe("Method Not Allowed");
+  });
+
+  it("rejects missing signature", async () => {
+    const req = new Request("https://w.local", {
+      method: "POST",
+      headers: {
+        "X-GitHub-Event": "workflow_run",
+      },
+      body: "{}",
+    });
+    const res = await worker.fetch(req, env as never);
+    expect(res.status).toBe(401);
+    const data = (await res.json()) as { message: string };
+    expect(data.message).toBe("Missing signature");
+  });
+
+  it("rejects invalid signature", async () => {
     const payload = {
       action: "completed",
       workflow_run: {
@@ -18,7 +45,9 @@ describe("E2E - GitHub Actions AI Auto-Debugger", () => {
         conclusion: "failure",
         head_branch: "fix/bug",
         head_sha: "sha123",
-        head_commit: { author: { name: "user" } },
+        head_commit: {
+          author: { name: "user" },
+        },
       },
       repository: {
         name: "repo",
@@ -28,45 +57,93 @@ describe("E2E - GitHub Actions AI Auto-Debugger", () => {
       installation: { id: 789 },
     };
 
-    const body = JSON.stringify(payload);
-
-    // Mocking the signature verification, jwt generation and other github calls in the worker
-    // This is a high-level E2E test that verifies the routing and initial logic.
-
-    // In a real Vitest-Cloudflare environment, we would use vi.mock for all fetch calls.
-    // For now, let's verify it hits the error about signature because we didn't sign it here correctly for the mock.
-
-    const request = new Request("https://worker.local", {
+    const req = new Request("https://w.local", {
       method: "POST",
       headers: {
         "X-GitHub-Event": "workflow_run",
         "X-Hub-Signature-256": "sha256=invalid",
       },
-      body,
+      body: JSON.stringify(payload),
     });
 
-    const response = await worker.fetch(request, env as any);
-    expect(response.status).toBe(401);
-    const data = (await response.json()) as any;
+    const res = await worker.fetch(req, env as never);
+    expect(res.status).toBe(401);
+    const data = (await res.json()) as { message: string };
     expect(data.message).toBe("Invalid signature");
   });
 
-  it("should ignore non-failure events", async () => {
+  it("passes valid signature and filters non-failure", async () => {
     const payload = {
       action: "completed",
       workflow_run: { conclusion: "success" },
     };
     const body = JSON.stringify(payload);
-    const request = new Request("https://worker.local", {
+
+    // Compute valid HMAC-SHA256 signature
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(env.WEBHOOK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(body),
+    );
+    const hex = Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const req = new Request("https://w.local", {
       method: "POST",
       headers: {
         "X-GitHub-Event": "workflow_run",
-        "X-Hub-Signature-256": "sha256=...", // signature check bypassed or mocked
+        "X-Hub-Signature-256": `sha256=${hex}`,
       },
       body,
     });
 
-    // We can't easily bypass crypto without more complex mocks, but we can test the logic branch
-    // if we were to mock verifyWebhookSignature.
+    const res = await worker.fetch(req, env as never);
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as { message: string };
+    expect(data.message).toBe("Not a failure event");
+  });
+
+  it("ignores non-workflow_run events", async () => {
+    const body = "{}";
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(env.WEBHOOK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      encoder.encode(body),
+    );
+    const hex = Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    const req = new Request("https://w.local", {
+      method: "POST",
+      headers: {
+        "X-GitHub-Event": "push",
+        "X-Hub-Signature-256": `sha256=${hex}`,
+      },
+      body,
+    });
+
+    const res = await worker.fetch(req, env as never);
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as { message: string };
+    expect(data.message).toBe("Event ignored");
   });
 });
+
