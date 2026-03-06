@@ -95,15 +95,18 @@ npm run deploy
 
 ## 💻 Local Development
 
-Create a `.dev.vars` file in the root directory:
+Create a `.env` file in the root directory and ensure you have your Cloudflare credentials ready for deployment:
 ```env
 WEBHOOK_SECRET=your_secret
 GITHUB_APP_ID=123456
 GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
 NVIDIA_API_KEY=nvapi-...
+ENABLE_CLOUDFLARE=True
+CLOUDFLARE_ACCOUNT_ID="your_cloudflare_account_id"
+CLOUDFLARE_API_TOKEN="your_cloudflare_api_token"
 ```
 
-Run the local development server:
+Run the local development server (uses `dotenv-cli` to inject `.env`):
 ```bash
 npm run dev
 ```

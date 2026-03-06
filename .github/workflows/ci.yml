@@ -36,7 +36,8 @@ jobs:
       - name: Run tests
         run: npx vitest run
 
-      - name: Wrangler dry-run deploy
-        run: npx wrangler deploy --dry-run
+      - name: Wrangler deploy
+        run: npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: placeholder
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
