@@ -88,11 +88,7 @@ describe("E2E - Worker Routing", () => {
       false,
       ["sign"],
     );
-    const sig = await crypto.subtle.sign(
-      "HMAC",
-      key,
-      encoder.encode(body),
-    );
+    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
     const hex = Array.from(new Uint8Array(sig))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -122,11 +118,7 @@ describe("E2E - Worker Routing", () => {
       false,
       ["sign"],
     );
-    const sig = await crypto.subtle.sign(
-      "HMAC",
-      key,
-      encoder.encode(body),
-    );
+    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
     const hex = Array.from(new Uint8Array(sig))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -146,4 +138,3 @@ describe("E2E - Worker Routing", () => {
     expect(data.message).toBe("Event ignored");
   });
 });
-

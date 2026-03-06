@@ -44,7 +44,7 @@ src/math.ts(5,3): error TS2322: Type 'string' is not assignable to type 'number'
   console.log("🚨 With the following error logs:");
   console.log(`${mockLogs.trim()}\n`);
 
-  console.log(`⏳ Waiting for Nvidia NIM AI to generate the fix...\n`);
+  console.log("⏳ Waiting for Nvidia NIM AI...\n");
 
   try {
     const fixedContent = await getAIFixWithFallback(
