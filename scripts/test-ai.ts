@@ -5,17 +5,17 @@ import { getAIFixWithFallback } from "../src/nvidia";
 async function runAITest() {
     console.log("🤖 Initiating direct test of the Nvidia NIM AI integration...");
 
-    // 1. Extract API Key from .dev.vars
+    // 1. Extract API Key from .env
     let apiKey = process.env.NVIDIA_API_KEY;
     if (!apiKey) {
         try {
-            const devVars = readFileSync(resolve(process.cwd(), ".dev.vars"), "utf8");
+            const devVars = readFileSync(resolve(process.cwd(), ".env"), "utf8");
             const match = devVars.match(/NVIDIA_API_KEY=(.+)/);
             if (match) {
                 apiKey = match[1].trim();
             }
         } catch (e) {
-            console.error("Could not read .dev.vars file");
+            console.error("Could not read .env file");
         }
     }
 
