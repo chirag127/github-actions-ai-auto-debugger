@@ -31,7 +31,7 @@ This **Deploy-it-Yourself GitHub App receiver** automates the entire process:
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/yourusername/github-actions-ai-auto-debugger.git
+git clone https://github.com/chirag127/github-actions-ai-auto-debugger.git
 cd github-actions-ai-auto-debugger
 npm install
 ```
@@ -74,7 +74,7 @@ npx wrangler secret put NVIDIA_API_KEY
 ```bash
 npm run deploy
 ```
-*Note the Cloudflare Worker URL printed in your terminal (e.g., `https://github-actions-ai-auto-debugger.yourusername.workers.dev`).*
+*Note the Cloudflare Worker URL printed in your terminal (e.g., `https://github-actions-ai-auto-debugger.chirag127.workers.dev`).*
 
 ### 6. Link the Webhook
 1. Go back to your GitHub App settings.
@@ -95,16 +95,16 @@ npm run deploy
 
 ## 💻 Local Development
 
-Create a `.env` file in the root directory and ensure you have your Cloudflare credentials ready for deployment:
-```env
-WEBHOOK_SECRET=your_secret
-GITHUB_APP_ID=123456
-GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
-NVIDIA_API_KEY=nvapi-...
-ENABLE_CLOUDFLARE=True
-CLOUDFLARE_ACCOUNT_ID="your_cloudflare_account_id"
-CLOUDFLARE_API_TOKEN="your_cloudflare_api_token"
-```
+Ensure you have a `.env` file in the root directory that contains your GitHub App Secrets and Cloudflare configuration variables before starting local development.
+
+**Required keys for your `.env` file:**
+- `WEBHOOK_SECRET`
+- `GITHUB_APP_ID`
+- `GITHUB_PRIVATE_KEY`
+- `NVIDIA_API_KEY`
+- `ENABLE_CLOUDFLARE`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
 
 Run the local development server (uses `dotenv-cli` to inject `.env`):
 ```bash
