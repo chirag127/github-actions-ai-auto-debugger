@@ -14,9 +14,33 @@ def verify_signature(secret: str, payload: bytes, signature: str) -> bool:
     mac = hmac.new(secret.encode(), msg=payload, digestmod=hashlib.sha256)
     return hmac.compare_digest(f"sha256={mac.hexdigest()}", signature)
 
+from app.ai_agent import create_graph
+
 async def process_webhook_background(payload: WebhookPayload):
-    # This will be integrated with LangGraph in Chunk 4
-    print(f"Processing background task for run {payload.workflow_run.get('id')}")
+    print(f"--- STARTING AI AGENT FOR RUN {payload.workflow_run.get('id')} ---")
+    graph = create_graph()
+    
+    initial_state = {
+        "repo_owner": payload.repository["owner"]["login"],
+        "repo_name": payload.repository["name"],
+        "branch": payload.workflow_run["head_branch"],
+        "head_sha": payload.workflow_run["head_sha"],
+        "run_id": payload.workflow_run["id"],
+        "installation_id": payload.installation["id"],
+        "github_token": "",
+        "failure_logs": "",
+        "files_to_fix": [],
+        "file_contents": {},
+        "fixed_contents": {},
+        "status": "started",
+        "error_message": ""
+    }
+    
+    try:
+        await graph.ainvoke(initial_state)
+        print("--- AI AGENT COMPLETED ---")
+    except Exception as e:
+        print(f"--- AI AGENT FAILED: {e} ---")
 
 @app.post("/webhook")
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
