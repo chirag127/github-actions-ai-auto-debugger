@@ -19,3 +19,25 @@ async def analyze_logs_for_files(logs: str) -> list[str]:
     except Exception as e:
         print(f"Error in log analysis: {e}")
         return []
+
+from langgraph.graph import StateGraph, END
+from app.models import AgentState
+
+async def fetch_logs_node(state: AgentState):
+    # This will be wired up to github_api later
+    return {"status": "logs_fetched"}
+
+async def analyze_error_node(state: AgentState):
+    return {"status": "analyzed"}
+
+def create_graph():
+    workflow = StateGraph(AgentState)
+    
+    workflow.add_node("fetch_logs", fetch_logs_node)
+    workflow.add_node("analyze_error", analyze_error_node)
+    
+    workflow.set_entry_point("fetch_logs")
+    workflow.add_edge("fetch_logs", "analyze_error")
+    workflow.add_edge("analyze_error", END)
+    
+    return workflow.compile()
