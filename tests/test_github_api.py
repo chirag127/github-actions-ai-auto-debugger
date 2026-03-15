@@ -16,14 +16,27 @@ def test_generate_jwt():
     assert isinstance(token, str)
     assert len(token) > 0
 
+from app.github_api import get_workflow_logs, get_file_content
+
 @pytest.mark.asyncio
-async def test_get_installation_token():
+async def test_get_workflow_logs():
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+        mock_response.text = "Error: File src/index.ts not found"
+        mock_response.headers = {"content-type": "text/plain"}
+        mock_get.return_value = mock_response
+        logs = await get_workflow_logs("token", "owner", "repo", 123)
+        assert "Error" in logs
+
+@pytest.mark.asyncio
+async def test_get_file_content():
     from unittest.mock import MagicMock
-    with patch("httpx.AsyncClient.post") as mock_post:
+    with patch("httpx.AsyncClient.get") as mock_get:
         mock_response = MagicMock()
-        mock_response.status_code = 201
-        mock_response.json.return_value = {"token": "ghs_test"}
-        mock_post.return_value = mock_response
-        
-        token = await get_installation_token("jwt", 456)
-        assert token == "ghs_test"
+        mock_response.status_code = 200
+        # Base64 for "const x = 1;"
+        mock_response.json.return_value = {"content": "Y29uc3QgeCA9IDE7\n"}
+        mock_get.return_value = mock_response
+        content = await get_file_content("token", "owner", "repo", "path/to/file", "main")
+        assert content == "const x = 1;"
