@@ -1,22 +1,80 @@
 # GitHub Actions AI Auto-Debugger
 
-A Python-based GitHub App backend that automatically fixes failed workflows using LangGraph and Nvidia NIM.
+A Python-based GitHub App backend that automatically fixes failed workflows using LangGraph with multi-provider LLM support.
 
 ## 🚀 Features
-- **Stateless & Lightweight:** Runs perfectly on a free Azure B1s VM (1GB RAM).
-- **LangGraph Driven:** Modular state machine for robust debugging logic.
-- **Multi-Model Support:** Uses Nvidia NIM for high-performance LLM inference.
-- **Secure:** HMAC webhook verification and JWT-based GitHub App authentication.
+- **Multi-Provider LLM Selection:** Choose from 9 different LLM providers (Cerebras, Groq, NVIDIA, Google, and more)
+- **LangSmith Observability:** Built-in tracing and monitoring for all LLM calls
+- **Stateless & Lightweight:** Runs perfectly on a free Azure B1s VM (1GB RAM)
+- **LangGraph Driven:** Modular state machine for robust debugging logic
+- **Secure:** HMAC webhook verification and JWT-based GitHub App authentication
 
 ## 🛠️ Tech Stack
 - **Python 3.11+**
 - **FastAPI** (Web server)
 - **LangGraph** (Agent orchestration)
-- **Nvidia NIM** (LLM provider)
-- **Langfuse** (Observability)
-- **Cloudflare Tunnels** (Public exposure)
+- **LangChain** (Multi-provider LLM abstraction)
+- **LangSmith** (Observability and tracing)
 
-## 🤖 Fully Automated Deployment (Azure VM)
+## 🤖 LLM Provider Selection
+
+This project supports multiple LLM providers through LangChain-native integrations. Configure your provider via environment variables:
+
+```bash
+AI_PROVIDER=cerebras
+AI_MODEL=qwen-3-235b-a22b-instruct-2507
+```
+
+### Available Providers
+
+| Provider | Package | Chat Class | Env Key | Default Model |
+|----------|---------|------------|---------|---------------|
+| 💎 Google Gemini | `langchain-google-genai` | `ChatGoogleGenerativeAI` | `GOOGLE_API_KEY` | `gemini-2.0-flash` |
+| 🔮 Cohere | `langchain-cohere` | `ChatCohere` | `COHERE_API_KEY` | `command-r-plus` |
+| 🌬️ Mistral AI | `langchain-mistralai` | `ChatMistralAI` | `MISTRAL_API_KEY` | `mistral-large-latest` |
+| ⚡ Groq | `langchain-groq` | `ChatGroq` | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
+| 🟢 NVIDIA NIM | `langchain-nvidia-ai-endpoints` | `ChatNVIDIA` | `NVIDIA_API_KEY` | `meta/llama-3.1-8b-instruct` |
+| 🧠 Cerebras | `langchain-cerebras` | `ChatCerebras` | `CEREBRAS_API_KEY` | `qwen-3-235b-a22b-instruct-2507` |
+| 🤗 HuggingFace | `langchain-huggingface` | `ChatHuggingFace` | `HUGGINGFACE_API_KEY` | `Qwen/Qwen2.5-Coder-32B-Instruct` |
+| 🌐 OpenRouter | `langchain-openrouter` | `ChatOpenRouter` | `OPENROUTER_API_KEY` | `meta-llama/llama-3-70b-instruct` |
+| 🐙 GitHub Models | `langchain-openai` | `ChatOpenAI` | `GITHUB_MODELS_TOKEN` | `gpt-4o` |
+
+> **Default:** `cerebras` / `qwen-3-235b-a22b-instruct-2507`
+
+## 📋 Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# AI Provider Selection (default: cerebras)
+AI_PROVIDER=cerebras
+AI_MODEL=qwen-3-235b-a22b-instruct-2507
+
+# Your chosen provider's API key
+CEREBRAS_API_KEY=your_cerebras_api_key_here
+
+# LangSmith Observability (optional but recommended)
+LANGSMITH_API_KEY=lsv2_sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+LANGSMITH_PROJECT=github-actions-ai-auto-debugger
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+```
+
+## 🔭 LangSmith Observability
+
+LangSmith provides tracing, monitoring, and analytics for all LLM calls:
+
+1. **Create a LangSmith account** at [smith.langchain.com](https://smith.langchain.com)
+2. **Get your API key** from Settings → API Keys
+3. **Set environment variables:**
+   ```bash
+   LANGSMITH_API_KEY=lsv2_sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   LANGSMITH_PROJECT=github-actions-ai-auto-debugger
+   ```
+4. **View traces** in your LangSmith dashboard to debug issues and analyze performance
+
+## 🚀 Fully Automated Deployment (Azure VM)
 
 This project is designed to be **Zero-Touch**. Once configured, every push to `main` will automatically redeploy the service to your Azure VM and restart the background tasks.
 
@@ -32,7 +90,10 @@ Go to **Settings → Secrets and variables → Actions** and add the following s
 | `GITHUB_APP_ID` | Your GitHub App ID. |
 | `GITHUB_PRIVATE_KEY` | The App's private `.pem` content. |
 | `WEBHOOK_SECRET` | Your webhook signing secret. |
-| `NVIDIA_API_KEY` | Your Nvidia NIM API key. |
+| `AI_PROVIDER` | Your chosen LLM provider (e.g., `cerebras`, `groq`). |
+| `AI_MODEL` | Your chosen model (e.g., `qwen-3-235b-a22b-instruct-2507`). |
+| `<PROVIDER>_API_KEY` | The API key for your chosen provider (e.g., `CEREBRAS_API_KEY`). |
+| `LANGSMITH_API_KEY` | Your LangSmith API key for observability. |
 
 ### 2. How it Works
 1. **GitHub Action:** The `Deployment` workflow SSHs into your VM.
@@ -47,6 +108,12 @@ Go to **Settings → Secrets and variables → Actions** and add the following s
 Once deployed, you can test the entire flow using the included script:
 ```bash
 python scripts/test-webhook.py https://your-tunnel-url.com your_webhook_secret
+```
+
+## 🧪 Running Tests
+
+```bash
+pytest tests/ -v
 ```
 
 ## 📄 License

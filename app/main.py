@@ -6,6 +6,10 @@ import hashlib
 import os
 import json
 from app.models import WebhookPayload
+from app.tracing import configure_tracing
+
+# Configure LangSmith tracing at startup
+configure_tracing()
 
 app = FastAPI()
 
@@ -19,7 +23,12 @@ from app.ai_agent import create_graph
 async def process_webhook_background(payload: WebhookPayload):
     print(f"--- STARTING AI AGENT FOR RUN {payload.workflow_run.get('id')} ---")
     graph = create_graph()
-    
+
+    # Read AI provider and model from environment variables
+    # Defaults to cerebras / qwen-3-235b-a22b-instruct-2507
+    ai_provider = os.environ.get("AI_PROVIDER", "cerebras")
+    ai_model = os.environ.get("AI_MODEL", "qwen-3-235b-a22b-instruct-2507")
+
     initial_state = {
         "repo_owner": payload.repository["owner"]["login"],
         "repo_name": payload.repository["name"],
@@ -33,9 +42,11 @@ async def process_webhook_background(payload: WebhookPayload):
         "file_contents": {},
         "fixed_contents": {},
         "status": "started",
-        "error_message": ""
+        "error_message": "",
+        "ai_provider": ai_provider,
+        "ai_model": ai_model
     }
-    
+
     try:
         await graph.ainvoke(initial_state)
         print("--- AI AGENT COMPLETED ---")
@@ -47,30 +58,30 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     body = await request.body()
     signature = request.headers.get("X-Hub-Signature-256", "")
     secret = os.environ.get("WEBHOOK_SECRET", "")
-    
+
     if not secret:
         # For testing purposes if env is not set
         secret = "testsecret"
 
     if not verify_signature(secret, body, signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
-        
+
     event = request.headers.get("X-GitHub-Event")
     if event != "workflow_run":
         return JSONResponse(content={"message": "Ignored event"}, status_code=200)
-        
+
     try:
         payload_dict = json.loads(body)
         payload = WebhookPayload(**payload_dict)
     except Exception as e:
         print(f"Payload error: {e}")
         raise HTTPException(status_code=400, detail="Invalid payload")
-        
+
     if payload.action != "completed" or payload.workflow_run.get("conclusion") != "failure":
         return JSONResponse(content={"message": "Ignored run"}, status_code=200)
-        
+
     if "[bot]" in payload.sender.get("login", ""):
         return JSONResponse(content={"message": "Ignored bot sender"}, status_code=200)
-        
+
     background_tasks.add_task(process_webhook_background, payload)
     return JSONResponse(content={"message": "Accepted"}, status_code=202)

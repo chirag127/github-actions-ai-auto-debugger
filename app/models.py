@@ -22,3 +22,5 @@ class AgentState(TypedDict):
     fixed_contents: Dict[str, str]
     status: str
     error_message: str
+    ai_provider: str
+    ai_model: str
