@@ -1,0 +1,22 @@
+{
+  "name": "ai-auto-debugger",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "lint": "biome check src/ tests/",
+    "format": "biome format --write src/ tests/"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9",
+    "@cloudflare/vitest-pool-workers": "^0.8",
+    "vitest": "^3",
+    "wrangler": "^4"
+  },
+  "dependencies": {
+    "fflate": "^0.8"
+  }
+}

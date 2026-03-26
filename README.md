@@ -55,24 +55,25 @@ AI_MODEL=qwen-3-235b-a22b-instruct-2507
 # Your chosen provider's API key
 CEREBRAS_API_KEY=your_cerebras_api_key_here
 
-# LangSmith Observability (optional but recommended)
-LANGSMITH_API_KEY=lsv2_sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-LANGSMITH_PROJECT=github-actions-ai-auto-debugger
-LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+# Langfuse Observability (FREE - unlimited traces)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
 ```
 
-## 🔭 LangSmith Observability
+## 🔭 Langfuse Observability (FREE - Unlimited Traces)
 
-LangSmith provides tracing, monitoring, and analytics for all LLM calls:
+Langfuse provides **unlimited free traces** (vs LangSmith's 1,000/month limit) with tracing, monitoring, and analytics for all LLM calls:
 
-1. **Create a LangSmith account** at [smith.langchain.com](https://smith.langchain.com)
-2. **Get your API key** from Settings → API Keys
+1. **Create a Langfuse account** at [cloud.langfuse.com](https://cloud.langfuse.com) (free, no credit card required)
+2. **Get your API keys** from Project Settings → API Keys
 3. **Set environment variables:**
    ```bash
-   LANGSMITH_API_KEY=lsv2_sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   LANGSMITH_PROJECT=github-actions-ai-auto-debugger
+   LANGFUSE_PUBLIC_KEY=pk-lf-...
+   LANGFUSE_SECRET_KEY=sk-lf-...
    ```
-4. **View traces** in your LangSmith dashboard to debug issues and analyze performance
+4. **View traces** in your Langfuse dashboard to debug issues and analyze performance
+
+> 💡 **Why Langfuse?** Unlimited free traces, open-source, self-hostable option
 
 ## 🚀 Fully Automated Deployment (Azure VM)
 
@@ -93,7 +94,8 @@ Go to **Settings → Secrets and variables → Actions** and add the following s
 | `AI_PROVIDER` | Your chosen LLM provider (e.g., `cerebras`, `groq`). |
 | `AI_MODEL` | Your chosen model (e.g., `qwen-3-235b-a22b-instruct-2507`). |
 | `<PROVIDER>_API_KEY` | The API key for your chosen provider (e.g., `CEREBRAS_API_KEY`). |
-| `LANGSMITH_API_KEY` | Your LangSmith API key for observability. |
+| `LANGFUSE_PUBLIC_KEY` | Your Langfuse public key for observability. |
+| `LANGFUSE_SECRET_KEY` | Your Langfuse secret key for observability. |
 
 ### 2. How it Works
 1. **GitHub Action:** The `Deployment` workflow SSHs into your VM.
