@@ -5,7 +5,6 @@
   "compatibility_date": "2025-09-06",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "WEBHOOK_SECRET": "testsecret",
     "AI_PROVIDER": "cerebras",
     "AI_MODEL": "qwen-3-235b-a22b-instruct-2507"
   },
