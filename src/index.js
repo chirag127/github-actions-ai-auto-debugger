@@ -3,8 +3,8 @@
  * Handles GitHub webhooks and processes AI debug jobs via CF Queues.
  */
 
-import { verifySignature } from "./verify.js";
 import { runDebugPipeline } from "./agent.js";
+import { verifySignature } from "./verify.js";
 
 export default {
 	/**

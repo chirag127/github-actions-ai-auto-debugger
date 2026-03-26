@@ -1,16 +1,18 @@
 import {
-	env,
-	createExecutionContext,
-	waitOnExecutionContext,
 	SELF,
+	createExecutionContext,
+	env,
+	waitOnExecutionContext,
 } from "cloudflare:test";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index.js";
 
 /**
  * Helper: compute HMAC-SHA256 signature for a payload.
+ * Uses the same secret the worker reads from env.WEBHOOK_SECRET.
  */
-async function signPayload(secret, payload) {
+async function signPayload(payload) {
+	const secret = env.WEBHOOK_SECRET || "testsecret";
 	const encoder = new TextEncoder();
 	const key = await crypto.subtle.importKey(
 		"raw",
@@ -19,11 +21,7 @@ async function signPayload(secret, payload) {
 		false,
 		["sign"],
 	);
-	const mac = await crypto.subtle.sign(
-		"HMAC",
-		key,
-		encoder.encode(payload),
-	);
+	const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
 	const hex = Array.from(new Uint8Array(mac))
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
@@ -65,7 +63,7 @@ describe("Worker fetch handler", () => {
 
 	it("POST /webhook with non-workflow_run event returns 200", async () => {
 		const body = '{"action":"opened"}';
-		const sig = await signPayload("test-secret", body);
+		const sig = await signPayload(body);
 
 		const req = new Request("http://localhost/webhook", {
 			method: "POST",
@@ -86,13 +84,18 @@ describe("Worker fetch handler", () => {
 	it("POST /webhook with non-failure conclusion returns 200", async () => {
 		const payload = {
 			action: "completed",
-			workflow_run: { conclusion: "success", id: 1, head_branch: "main", head_sha: "abc" },
+			workflow_run: {
+				conclusion: "success",
+				id: 1,
+				head_branch: "main",
+				head_sha: "abc",
+			},
 			repository: { name: "repo", owner: { login: "user" } },
 			sender: { login: "user" },
 			installation: { id: 1 },
 		};
 		const body = JSON.stringify(payload);
-		const sig = await signPayload("test-secret", body);
+		const sig = await signPayload(body);
 
 		const req = new Request("http://localhost/webhook", {
 			method: "POST",
@@ -113,13 +116,18 @@ describe("Worker fetch handler", () => {
 	it("POST /webhook with bot sender returns 200", async () => {
 		const payload = {
 			action: "completed",
-			workflow_run: { conclusion: "failure", id: 1, head_branch: "main", head_sha: "abc" },
+			workflow_run: {
+				conclusion: "failure",
+				id: 1,
+				head_branch: "main",
+				head_sha: "abc",
+			},
 			repository: { name: "repo", owner: { login: "user" } },
 			sender: { login: "dependabot[bot]" },
 			installation: { id: 1 },
 		};
 		const body = JSON.stringify(payload);
-		const sig = await signPayload("test-secret", body);
+		const sig = await signPayload(body);
 
 		const req = new Request("http://localhost/webhook", {
 			method: "POST",

@@ -43,7 +43,10 @@ function base64url(data) {
 	for (const b of bytes) {
 		binary += String.fromCharCode(b);
 	}
-	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+	return btoa(binary)
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=+$/, "");
 }
 
 /**

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { chatCompletion, listProviders } from "../src/providers.js";
 
 describe("listProviders", () => {
@@ -51,9 +51,7 @@ describe("chatCompletion", () => {
 			CEREBRAS_API_KEY: "test-key",
 		};
 
-		const result = await chatCompletion(env, [
-			{ role: "user", content: "Hi" },
-		]);
+		const result = await chatCompletion(env, [{ role: "user", content: "Hi" }]);
 
 		expect(result).toBe("Hello");
 		expect(fetchSpy).toHaveBeenCalledWith(

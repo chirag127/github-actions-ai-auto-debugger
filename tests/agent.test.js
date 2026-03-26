@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runDebugPipeline } from "../src/agent.js";
 
 // Mock the dependencies
@@ -18,9 +18,8 @@ vi.mock("../src/github.js", () => ({
 
 vi.mock("../src/providers.js", () => ({
 	chatCompletion: vi.fn(async (env, messages) => {
-		// Return different responses based on the system prompt
 		const systemMsg = messages[0]?.content || "";
-		if (systemMsg.includes("Identify the file paths")) {
+		if (systemMsg.includes("Analyze the logs")) {
 			return '{"files": ["src/index.js"]}';
 		}
 		if (systemMsg.includes("Fix the provided code")) {
@@ -33,7 +32,8 @@ vi.mock("../src/providers.js", () => ({
 describe("runDebugPipeline", () => {
 	const mockEnv = {
 		GITHUB_APP_ID: "12345",
-		GITHUB_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----",
+		GITHUB_PRIVATE_KEY:
+			"-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----",
 		AI_PROVIDER: "cerebras",
 		AI_MODEL: "test-model",
 		CEREBRAS_API_KEY: "test-key",
@@ -57,14 +57,24 @@ describe("runDebugPipeline", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Mock fetch for the SHA lookup in commit step
+		vi.spyOn(globalThis, "fetch").mockResolvedValue({
+			ok: true,
+			json: async () => ({ sha: "mock-sha-123" }),
+		});
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
 	});
 
 	it("completes the full pipeline successfully", async () => {
 		await runDebugPipeline(mockEnv, mockPayload);
 
 		const { createGitHubJWT } = await import("../src/jwt.js");
-		const { getInstallationToken, getWorkflowLogs, commitFile } =
-			await import("../src/github.js");
+		const { getInstallationToken, getWorkflowLogs, commitFile } = await import(
+			"../src/github.js"
+		);
 		const { chatCompletion } = await import("../src/providers.js");
 
 		expect(createGitHubJWT).toHaveBeenCalledWith(
@@ -93,8 +103,8 @@ describe("runDebugPipeline", () => {
 		const { chatCompletion } = await import("../src/providers.js");
 		vi.mocked(chatCompletion).mockResolvedValueOnce("not valid json");
 
-		await expect(
-			runDebugPipeline(mockEnv, mockPayload),
-		).rejects.toThrow("Failed to parse analysis response");
+		await expect(runDebugPipeline(mockEnv, mockPayload)).rejects.toThrow(
+			"Failed to parse analysis response",
+		);
 	});
 });

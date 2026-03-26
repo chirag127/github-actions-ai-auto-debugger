@@ -3,13 +3,13 @@
  * Replaces the Python LangGraph state machine with a sequential async pipeline.
  */
 
-import { createGitHubJWT } from "./jwt.js";
 import {
+	commitFile,
+	getFileContent,
 	getInstallationToken,
 	getWorkflowLogs,
-	getFileContent,
-	commitFile,
 } from "./github.js";
+import { createGitHubJWT } from "./jwt.js";
 import { chatCompletion } from "./providers.js";
 
 /**

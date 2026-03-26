@@ -1,15 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGitHubJWT } from "../src/jwt.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	getInstallationToken,
-	getFileContent,
 	commitFile,
+	getFileContent,
+	getInstallationToken,
 } from "../src/github.js";
+import { createGitHubJWT } from "../src/jwt.js";
 
 // Generate a test RSA key pair for JWT tests
 async function generateTestKeyPair() {
 	const keyPair = await crypto.subtle.generateKey(
-		{ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+		{
+			name: "RSASSA-PKCS1-v1_5",
+			modulusLength: 2048,
+			publicExponent: new Uint8Array([1, 0, 1]),
+			hash: "SHA-256",
+		},
 		true,
 		["sign", "verify"],
 	);
@@ -88,7 +93,13 @@ describe("getFileContent", () => {
 			json: async () => ({ content: b64 }),
 		});
 
-		const result = await getFileContent("tok", "owner", "repo", "src/index.js", "abc123");
+		const result = await getFileContent(
+			"tok",
+			"owner",
+			"repo",
+			"src/index.js",
+			"abc123",
+		);
 		expect(result).toBe(content);
 	});
 
@@ -98,7 +109,13 @@ describe("getFileContent", () => {
 			status: 404,
 		});
 
-		const result = await getFileContent("tok", "owner", "repo", "missing.js", "abc123");
+		const result = await getFileContent(
+			"tok",
+			"owner",
+			"repo",
+			"missing.js",
+			"abc123",
+		);
 		expect(result).toBe("");
 	});
 });

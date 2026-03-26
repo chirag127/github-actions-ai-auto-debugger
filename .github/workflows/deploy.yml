@@ -1,4 +1,4 @@
-name: Deployment
+name: Deploy Worker
 
 on:
   push:
@@ -6,30 +6,55 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Azure VM
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+    permissions:
+      contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/github-actions-ai-auto-debugger || git clone https://github.com/${{ github.repository }} ~/github-actions-ai-auto-debugger
-            cd ~/github-actions-ai-auto-debugger
-            git pull origin main
-            
-            # Run the automation script
-            bash scripts/setup-vm.sh
+          node-version: "22"
+
+      - run: npm install
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          secrets: |
+            WEBHOOK_SECRET
+            GITHUB_APP_ID
+            GITHUB_PRIVATE_KEY
+            AI_PROVIDER
+            AI_MODEL
+            CEREBRAS_API_KEY
+            GROQ_API_KEY
+            NVIDIA_API_KEY
+            GOOGLE_API_KEY
+            MISTRAL_API_KEY
+            COHERE_API_KEY
+            OPENROUTER_API_KEY
+            HUGGINGFACE_API_KEY
+            GITHUB_MODELS_TOKEN
+            LANGFUSE_PUBLIC_KEY
+            LANGFUSE_SECRET_KEY
+            LANGFUSE_BASE_URL
         env:
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
           GITHUB_PRIVATE_KEY: ${{ secrets.GITHUB_PRIVATE_KEY }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}

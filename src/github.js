@@ -3,8 +3,8 @@
  * Uses native fetch() — no external HTTP library needed.
  */
 
-import { createGitHubJWT } from "./jwt.js";
 import { unzipSync } from "fflate";
+import { createGitHubJWT } from "./jwt.js";
 
 const GH_HEADERS = {
 	Accept: "application/vnd.github.v3+json",

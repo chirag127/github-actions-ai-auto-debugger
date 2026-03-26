@@ -20,8 +20,7 @@ const PROVIDERS = {
 		defaultModel: "mistral-large-latest",
 	},
 	google_gemini: {
-		baseUrl:
-			"https://generativelanguage.googleapis.com/v1beta/openai",
+		baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
 		envKey: "GOOGLE_API_KEY",
 		defaultModel: "gemini-2.0-flash",
 	},
