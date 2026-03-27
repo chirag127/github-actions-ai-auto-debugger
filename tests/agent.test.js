@@ -32,8 +32,8 @@ vi.mock("../src/providers.js", () => ({
 
 describe("runDebugPipeline", () => {
 	const mockEnv = {
-		GITHUB_APP_ID: "12345",
-		GITHUB_PRIVATE_KEY:
+		GH_APP_ID: "12345",
+		GH_APP_PRIVATE_KEY:
 			"-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----",
 		AI_PROVIDER: "cerebras",
 		AI_MODEL: "test-model",
@@ -75,7 +75,7 @@ describe("runDebugPipeline", () => {
 
 		expect(createGitHubJWT).toHaveBeenCalledWith(
 			"12345",
-			mockEnv.GITHUB_PRIVATE_KEY,
+			mockEnv.GH_APP_PRIVATE_KEY,
 		);
 		expect(getInstallationToken).toHaveBeenCalledWith("mock-jwt-token", 12345);
 		expect(getWorkflowLogs).toHaveBeenCalledWith(
@@ -88,11 +88,11 @@ describe("runDebugPipeline", () => {
 		expect(commitFile).toHaveBeenCalled();
 	});
 
-	it("throws on missing GITHUB_APP_ID", async () => {
-		const envWithoutAppId = { ...mockEnv, GITHUB_APP_ID: undefined };
+	it("throws on missing GH_APP_ID", async () => {
+		const envWithoutAppId = { ...mockEnv, GH_APP_ID: undefined };
 		await expect(
 			runDebugPipeline(envWithoutAppId, mockPayload),
-		).rejects.toThrow("Missing GITHUB_APP_ID or GITHUB_PRIVATE_KEY");
+		).rejects.toThrow("Missing GH_APP_ID or GH_APP_PRIVATE_KEY");
 	});
 
 	it("handles LLM parsing errors gracefully", async () => {

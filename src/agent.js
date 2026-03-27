@@ -28,11 +28,11 @@ export async function runDebugPipeline(env, payload) {
 
 	// Step 1: Authenticate
 	console.log("--- AUTHENTICATING ---");
-	const appId = env.GITHUB_APP_ID;
-	const privateKey = env.GITHUB_PRIVATE_KEY;
+	const appId = env.GH_APP_ID;
+	const privateKey = env.GH_APP_PRIVATE_KEY;
 
 	if (!appId || !privateKey) {
-		throw new Error("Missing GITHUB_APP_ID or GITHUB_PRIVATE_KEY");
+		throw new Error("Missing GH_APP_ID or GH_APP_PRIVATE_KEY");
 	}
 
 	const jwt = await createGitHubJWT(appId, privateKey);
