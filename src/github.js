@@ -109,6 +109,33 @@ export async function getFileContent(token, owner, repo, path, ref) {
 }
 
 /**
+ * Get file SHA from a repository (for commit operations).
+ * @param {string} token
+ * @param {string} owner
+ * @param {string} repo
+ * @param {string} path - File path in repo
+ * @param {string} ref - Git ref (SHA, branch, tag)
+ * @returns {Promise<string>} File SHA or empty string
+ */
+export async function getFileSHA(token, owner, repo, path, ref) {
+	const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${ref}`;
+
+	const res = await fetch(url, {
+		headers: {
+			...GH_HEADERS,
+			Authorization: `Bearer ${token}`,
+		},
+	});
+
+	if (!res.ok) {
+		return "";
+	}
+
+	const data = await res.json();
+	return data.sha || "";
+}
+
+/**
  * Commit a file update to a repository.
  * @param {string} token
  * @param {string} owner

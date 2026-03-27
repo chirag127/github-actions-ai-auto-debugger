@@ -13,6 +13,7 @@ vi.mock("../src/github.js", () => ({
 		if (path === "src/index.js") return "const x = 1;\nconsole.log(x);";
 		return "";
 	}),
+	getFileSHA: vi.fn(async () => "mock-sha-123"),
 	commitFile: vi.fn(async () => {}),
 }));
 
@@ -57,11 +58,6 @@ describe("runDebugPipeline", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Mock fetch for the SHA lookup in commit step
-		vi.spyOn(globalThis, "fetch").mockResolvedValue({
-			ok: true,
-			json: async () => ({ sha: "mock-sha-123" }),
-		});
 	});
 
 	afterEach(() => {

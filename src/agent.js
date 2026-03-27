@@ -6,6 +6,7 @@
 import {
 	commitFile,
 	getFileContent,
+	getFileSHA,
 	getInstallationToken,
 	getWorkflowLogs,
 } from "./github.js";
@@ -118,8 +119,8 @@ Return ONLY JSON.`,
 	// Step 6: Commit fixes
 	console.log("--- COMMITTING FIXES ---");
 	for (const [path, content] of Object.entries(fixedContents)) {
-		// Get current file SHA
-		const fileData = await getFileContent(
+		// Get current file SHA for the commit
+		const sha = await getFileSHA(
 			githubToken,
 			repoOwner,
 			repoName,
@@ -127,17 +128,10 @@ Return ONLY JSON.`,
 			branch,
 		);
 
-		// We need the SHA for the commit, so fetch it via the Contents API
-		const shaUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}?ref=${branch}`;
-		const shaRes = await fetch(shaUrl, {
-			headers: {
-				Authorization: `Bearer ${githubToken}`,
-				Accept: "application/vnd.github.v3+json",
-			},
-		});
-
-		if (!shaRes.ok) continue;
-		const shaData = await shaRes.json();
+		if (!sha) {
+			console.log(`Skipping ${path}: could not get SHA`);
+			continue;
+		}
 
 		await commitFile(
 			githubToken,
@@ -146,7 +140,7 @@ Return ONLY JSON.`,
 			path,
 			branch,
 			content,
-			shaData.sha,
+			sha,
 			`fix: AI auto-patch for ${path}`,
 		);
 	}

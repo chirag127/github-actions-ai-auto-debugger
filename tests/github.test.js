@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	commitFile,
 	getFileContent,
+	getFileSHA,
 	getInstallationToken,
 } from "../src/github.js";
 import { createGitHubJWT } from "../src/jwt.js";
@@ -152,5 +153,35 @@ describe("commitFile", () => {
 		expect(body.sha).toBe("sha123");
 		expect(body.branch).toBe("main");
 		expect(body.content).toBeTruthy();
+	});
+});
+
+describe("getFileSHA", () => {
+	beforeEach(() => vi.restoreAllMocks());
+
+	it("returns the file SHA", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue({
+			ok: true,
+			json: async () => ({ sha: "abc123sha" }),
+		});
+
+		const sha = await getFileSHA(
+			"tok",
+			"owner",
+			"repo",
+			"src/index.js",
+			"main",
+		);
+		expect(sha).toBe("abc123sha");
+	});
+
+	it("returns empty string for 404", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue({
+			ok: false,
+			status: 404,
+		});
+
+		const sha = await getFileSHA("tok", "owner", "repo", "missing.js", "main");
+		expect(sha).toBe("");
 	});
 });
