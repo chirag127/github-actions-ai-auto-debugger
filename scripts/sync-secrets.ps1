@@ -28,10 +28,16 @@ Get-Content ".env" | ForEach-Object {
         $value = $value -replace '\\n', "`n"
 
         if ($key -and $value) {
-            Write-Host "Syncing secret: $key" -ForegroundColor Gray
+            Write-Host "Syncing secret to GitHub: $key" -ForegroundColor Gray
             $value | gh secret set $key
+
+            # Sync to Cloudflare Proxy as well
+            if ($null -ne (Get-Command "wrangler" -ErrorAction SilentlyContinue)) {
+                Write-Host "Syncing secret to Cloudflare: $key" -ForegroundColor DarkGray
+                $value | pnpm dlx wrangler secret put $key
+            }
         }
     }
 }
 
-Write-Host "Successfully synced secrets to GitHub repository." -ForegroundColor Green
+Write-Host "Successfully synced secrets to GitHub and Cloudflare." -ForegroundColor Green
