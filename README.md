@@ -3,147 +3,146 @@
 [![CI](https://github.com/chirag127/github-actions-ai-auto-debugger/actions/workflows/ci.yml/badge.svg)](https://github.com/chirag127/github-actions-ai-auto-debugger/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A **completely free**, zero-configuration AI debugger that automatically analyzes and fixes failed GitHub Actions workflows across all your repositories.
+A **completely free**, zero-configuration AI debugger that automatically analyzes and fixes failed GitHub Actions workflows across **all your repositories** using **Google Gemini CLI**.
+
+> **Zero Config Per Repo** — Install the GitHub App once. Every repo it monitors gets automatic AI-powered fixes via PRs. No YAML files, no per-repo setup.
 
 ---
 
 ## 🏗️ Architecture
 
-The system uses a **Centralized Proxy Pattern** to achieve truly zero-cost operation and multi-repository support without project-level configuration.
-
 ```mermaid
 graph TD
-    RepoA[User Project - Fails] -- "workflow_run (webhook)" --> Proxy[Cloudflare Proxy<br/>Free Tier]
-    Proxy -- "Verify Signature" --> Proxy
-    Proxy -- "workflow_dispatch" --> CentralRepo[Management Repo<br/>GitHub Action]
-    CentralRepo -- "Fetch Logs & Fix" --> LLM[LLM Provider]
-    CentralRepo -- "Push Patch" --> RepoA
+    RepoA[Any Repo — Fails] -- "webhook" --> Proxy[Cloudflare Proxy<br/>Free Tier]
+    Proxy -- "verify HMAC" --> Proxy
+    Proxy -- "workflow_dispatch" --> Central[Management Repo<br/>GitHub Action]
+    Central -- "checkout target repo" --> Gemini[Gemini CLI Agent]
+    Gemini -- "read logs, fix code,<br/>run tests, iterate" --> Gemini
+    Gemini -- "create PR" --> RepoA
 ```
 
-- **Cloudflare Proxy**: A lightweight, high-performance script that handles GitHub webhooks and triggers the repair pipeline.
-- **GitHub Action**: The core engine that performs deep log analysis, identifies the root cause, and generates code fixes.
-- **Multi-Provider LLM**: Supports 9+ top-tier AI models (Cerebras, Groq, Gemini, NVIDIA, etc.) for high-quality repairs.
+| Component | Role | Cost |
+|-----------|------|------|
+| **Cloudflare Proxy** | Receives webhooks, verifies HMAC, dispatches to central repo | Free |
+| **GitHub Action** | Checks out the failed repo, runs Gemini CLI agentic debugger | Free |
+| **Gemini CLI** | Full agentic AI — shell execution, file I/O, test verification, iterative fixes | Free (1K req/day) |
 
 ---
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following:
-
-- **Node.js 22+** and **pnpm 9+** installed.
-- A **GitHub App** created and installed on your organization/account.
-  - **Permissions**: `Actions (Read)`, `Contents (Write)`, `Metadata (Read-only)`.
-  - **Events**: `Workflow run` (Completed).
-- An **API Key** from one of the supported LLM providers (e.g., [Cerebras](https://cloud.cerebras.ai/)).
-- A **Cloudflare Account** (Free tier is sufficient).
-- **GitHub CLI (gh)** installed and authenticated (`gh auth login`).
+- A **GitHub App** installed on your organization/account
+  - **Permissions**: `Actions (Read)`, `Contents (Write)`, `Pull Requests (Write)`, `Metadata (Read)`
+  - **Events**: `Workflow run` (Completed)
+- A **Google AI Studio API Key** ([get one free](https://aistudio.google.com/apikey))
+- A **Cloudflare Account** (Free tier)
+- **GitHub CLI** (`gh`) and **Node.js 22+**
 
 ---
 
 ## 🛠️ Installation
 
-1.  **Clone the Management Repository**:
-    ```bash
-    git clone https://github.com/chirag127/github-actions-ai-auto-debugger.git
-    cd github-actions-ai-auto-debugger
-    ```
-
-2.  **Install Dependencies**:
-    ```bash
-    pnpm install
-    ```
+```bash
+git clone https://github.com/chirag127/github-actions-ai-auto-debugger.git
+cd github-actions-ai-auto-debugger
+pnpm install
+```
 
 ---
 
-## 🔐 Environment Variable Setup
+## 🔐 Environment Setup
 
-1.  **Initialize the `.env` file**:
-    ```bash
-    cp .env.example .env
-    ```
+1. Copy the example env:
+   ```bash
+   cp .env.example .env
+   ```
 
-2.  **Configure your variables**:
-    Refer to the detailed instructions inside the `.env` file for each setting.
+2. Fill in your secrets (see detailed instructions inside `.env`).
 
-3.  **Sync Secrets to GitHub**:
-    Automatically deploy your `.env` values to GitHub Repository Secrets:
-    ```powershell
-    # Windows (PowerShell)
-    ./scripts/sync-secrets.ps1
-    ```
+3. Sync secrets to **GitHub**:
+   ```powershell
+   ./scripts/sync-secrets.ps1
+   ```
 
-### Configuration Table
+4. Upload secrets to **Cloudflare** (only `WEBHOOK_SECRET` and `GITHUB_TOKEN` are needed by the proxy):
+   ```bash
+   echo "YOUR_WEBHOOK_SECRET" | pnpm dlx wrangler secret put WEBHOOK_SECRET
+   echo "YOUR_GITHUB_PAT" | pnpm dlx wrangler secret put GITHUB_TOKEN
+   ```
 
-| Variable | Description | Source |
-| :--- | :--- | :--- |
-| `GH_APP_ID` | Your GitHub App ID | GitHub Settings |
-| `GH_APP_PRIVATE_KEY` | PEM private key for the App | GitHub Settings |
-| `WEBHOOK_SECRET` | Secret for HMAC verification | GitHub Settings |
-| `GH_TOKEN` | PAT with `actions:write` on this repo | GitHub Settings |
-| `AI_PROVIDER` | Chosen LLM provider name | LLM Dashboard |
-| `AI_API_KEY` | API Key for the provider | LLM Dashboard |
+### Key Secrets
+
+| Secret | Where | Purpose |
+|--------|-------|---------|
+| `GH_APP_ID` | GitHub | App authentication |
+| `GH_APP_PRIVATE_KEY` | GitHub | App authentication |
+| `GEMINI_API_KEY` | GitHub | Gemini CLI model access |
+| `WEBHOOK_SECRET` | Cloudflare + GitHub | HMAC verification |
+| `GITHUB_TOKEN` | Cloudflare | Proxy → dispatch trigger |
 
 ---
 
 ## 🗄️ Database Migrations
 
-This application is **entirely stateless**. It stores no persistent data and therefore requires **zero database migrations**. All processing is done in-memory within the GitHub Action runner and Cloudflare Worker.
+This application is **entirely stateless**. No database, no migrations. All processing happens in-memory within the GitHub Action runner.
 
 ---
 
 ## 🚀 Running the App
 
-### Local Development
-To test the AI repair pipeline locally without triggering a GitHub webhook:
-1. Fill in the `TARGET_REPO_OWNER`, `TARGET_RUN_ID`, etc., in your `.env`.
-2. Run the entry point:
-   ```bash
-   node src/index.js
-   ```
+### Production (Automatic)
+Once deployed, the system runs fully automatically:
+1. A workflow fails in any monitored repo.
+2. GitHub sends a webhook to the Cloudflare Proxy.
+3. The Proxy triggers the central AI Debugger workflow.
+4. Gemini CLI checks out the failed repo, reads logs, fixes code, runs tests, and creates a PR.
 
-### Production Deployment
-1. **Deploy the Proxy**:
-   ```bash
-   pnpm run deploy
-   ```
-2. **Point the App**:
-   Update your GitHub App's "Webhook URL" to the Cloudflare Worker URL provided by the deployment.
+### Local Testing
+```bash
+# Test the proxy locally
+pnpm dlx wrangler dev
+
+# Run AI debugger manually (set TARGET_* vars in .env)
+node src/index.js
+```
 
 ---
 
 ## 🧪 Running Tests
 
-We use **Vitest** for a comprehensive testing suite that covers the AI pipeline, GitHub API client, and signature verification.
-
 ```bash
-# Run all tests
-pnpm test
-
-# Run tests with coverage
-pnpm run test:coverage
-
-# Lint and format
-pnpm run lint
-pnpm run format
+pnpm test          # Run all tests (26 tests)
+pnpm run lint      # Biome lint check
+pnpm run format    # Biome format
+pnpm run build     # Bundle dist/index.js
 ```
 
 ---
 
 ## 📦 Deployment
 
-### Cloudflare Proxy
-Managed via `Wrangler`. Deployment is automated on every push to `main` via the **Deploy Proxy Worker** workflow.
+### 1. Deploy the Proxy to Cloudflare
+```bash
+pnpm run deploy
+```
+This deploys `src/proxy.js` to Cloudflare Workers (Free Tier).
 
-### GitHub Action
-The repair engine is bundled into `dist/index.js` via **Rollup**. Ensure you commit the `dist` folder so GitHub can run the action without building it on every trigger.
+### 2. Configure the GitHub App
+- Set the **Webhook URL** to your Cloudflare Worker URL (e.g., `https://ai-auto-debugger-proxy.your-account.workers.dev/webhook`).
+- Set the **Webhook Secret** to the same value as `WEBHOOK_SECRET`.
+
+### 3. Install the App
+Install the GitHub App on your account/organization. Select the repos you want monitored.
 
 ---
 
 ## 🛠️ Additional Tools
 
-- **Wrangler**: Use `pnpm dlx wrangler tail` to monitor live logs from your Proxy Worker.
-- **GitHub CLI**: Use `gh secret list` to verify your synchronized secrets.
-- **Biome**: Modern, high-performance linter and formatter used to enforce code quality.
+| Tool | Command | Purpose |
+|------|---------|---------|
+| **Wrangler** | `pnpm dlx wrangler tail` | Monitor live proxy logs |
+| **GitHub CLI** | `gh secret list` | Verify synced secrets |
+| **Biome** | `pnpm run lint` | Code quality |
 
 ---
 
