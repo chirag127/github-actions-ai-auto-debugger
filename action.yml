@@ -1,5 +1,7 @@
 name: "AI Auto-Debugger"
-description: "Automatically analyzes and fixes failed GitHub Actions workflows using AI."
+description:
+  "Automatically analyzes and fixes failed GitHub Actions
+  workflows using AI."
 author: "chirag127"
 branding:
   icon: "zap"
@@ -7,11 +9,15 @@ branding:
 
 inputs:
   ai-provider:
-    description: "AI Provider (e.g., cerebras, groq, mistral, google_gemini, nvidia)"
+    description:
+      "AI Provider (cerebras, groq, mistral, google_gemini,
+      nvidia, cohere, huggingface, openrouter, github_models)"
     required: false
     default: "cerebras"
   ai-model:
-    description: "Specific LLM model to use (leave empty for provider default)"
+    description:
+      "Specific LLM model to use (leave empty for provider
+      default)"
     required: false
     default: ""
   ai-api-key:
@@ -43,5 +49,5 @@ inputs:
     required: true
 
 runs:
-  using: "node20"
+  using: "node22"
   main: "dist/index.js"
