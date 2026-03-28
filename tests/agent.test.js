@@ -32,7 +32,7 @@ vi.mock("../src/providers.js", () => ({
 
 describe("runDebugPipeline", () => {
 	const mockEnv = {
-		GH_APP_ID: "12345",
+		GH_APP_ID: "123456",
 		GH_APP_PRIVATE_KEY:
 			"-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----",
 		AI_PROVIDER: "cerebras",
@@ -41,18 +41,15 @@ describe("runDebugPipeline", () => {
 	};
 
 	const mockPayload = {
-		action: "completed",
+		repository: {
+			owner: { login: "test-owner" },
+			name: "test-repo",
+		},
 		workflow_run: {
 			id: 99999,
-			head_branch: "main",
 			head_sha: "abc123",
-			conclusion: "failure",
+			head_branch: "main",
 		},
-		repository: {
-			name: "test-repo",
-			owner: { login: "test-owner" },
-		},
-		sender: { login: "test-user" },
 		installation: { id: 12345 },
 	};
 
@@ -74,7 +71,7 @@ describe("runDebugPipeline", () => {
 		const { chatCompletion } = await import("../src/providers.js");
 
 		expect(createGitHubJWT).toHaveBeenCalledWith(
-			"12345",
+			"123456",
 			mockEnv.GH_APP_PRIVATE_KEY,
 		);
 		expect(getInstallationToken).toHaveBeenCalledWith("mock-jwt-token", 12345);

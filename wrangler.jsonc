@@ -1,30 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ai-auto-debugger",
-  "main": "src/index.js",
+  "name": "ai-auto-debugger-proxy",
+  "main": "src/proxy.js",
   "compatibility_date": "2025-09-06",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "AI_PROVIDER": "cerebras",
-    "AI_MODEL": "qwen-3-235b-a22b-instruct-2507"
+    "CENTRAL_REPO_OWNER": "chirag127",
+    "CENTRAL_REPO_NAME": "github-actions-ai-auto-debugger",
+    "CENTRAL_WORKFLOW_ID": "ai-debugger.yml"
   },
   "observability": {
     "enabled": true
-  },
-  "queues": {
-    "producers": [
-      {
-        "binding": "DEBUG_QUEUE",
-        "queue": "ai-auto-debugger-queue"
-      }
-    ],
-    "consumers": [
-      {
-        "queue": "ai-auto-debugger-queue",
-        "max_batch_size": 1,
-        "max_retries": 2,
-        "dead_letter_queue": "ai-debugger-dlq"
-      }
-    ]
   }
 }

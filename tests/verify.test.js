@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { verifySignature } from "../src/verify.js";
+import { verifySignature } from "../src/proxy.js";
 
 describe("verifySignature", () => {
 	const secret = "test-secret";

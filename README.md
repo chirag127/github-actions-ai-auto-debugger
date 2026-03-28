@@ -1,123 +1,151 @@
-# GitHub Actions AI Auto-Debugger
+# 🤖 GitHub Actions AI Auto-Debugger
 
-A Cloudflare Worker that automatically fixes failed GitHub Actions workflows using multi-provider LLM support.
+[![CI](https://github.com/chirag127/github-actions-ai-auto-debugger/actions/workflows/ci.yml/badge.svg)](https://github.com/chirag127/github-actions-ai-auto-debugger/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Architecture
+A **completely free**, zero-configuration AI debugger that automatically analyzes and fixes failed GitHub Actions workflows across all your repositories.
 
+---
+
+## 🏗️ Architecture
+
+The system uses a **Centralized Proxy Pattern** to achieve truly zero-cost operation and multi-repository support without project-level configuration.
+
+```mermaid
+graph TD
+    RepoA[User Project - Fails] -- "workflow_run (webhook)" --> Proxy[Cloudflare Proxy<br/>Free Tier]
+    Proxy -- "Verify Signature" --> Proxy
+    Proxy -- "workflow_dispatch" --> CentralRepo[Management Repo<br/>GitHub Action]
+    CentralRepo -- "Fetch Logs & Fix" --> LLM[LLM Provider]
+    CentralRepo -- "Push Patch" --> RepoA
 ```
-GitHub Webhook → CF Worker (webhook handler) → CF Queue → CF Worker (queue consumer) → LLM Provider → GitHub API
-```
 
-- **Webhook handler** — verifies HMAC signature, filters events, returns `202 Accepted`, enqueues to CF Queue
-- **Queue consumer** — runs the AI debug pipeline with unlimited CPU time (up to 15 min wall time)
-- **Zero hosting cost** — CF Workers Free plan: 100k requests/day, 10M queue operations/month
+- **Cloudflare Proxy**: A lightweight, high-performance script that handles GitHub webhooks and triggers the repair pipeline.
+- **GitHub Action**: The core engine that performs deep log analysis, identifies the root cause, and generates code fixes.
+- **Multi-Provider LLM**: Supports 9+ top-tier AI models (Cerebras, Groq, Gemini, NVIDIA, etc.) for high-quality repairs.
 
-## Features
+---
 
-- **Multi-Provider LLM:** Choose from 9 providers (Cerebras, Groq, NVIDIA, Google Gemini, Mistral, Cohere, HuggingFace, OpenRouter, GitHub Models)
-- **Queue-Based Processing:** Webhook returns instantly; AI pipeline runs in background
-- **Secure:** HMAC-SHA256 webhook verification, JWT-based GitHub App authentication
-- **Zero Cold Start:** V8 isolates, no container boot time
-- **Free Hosting:** Cloudflare Workers Free plan
+## 📋 Prerequisites
 
-## Quick Start
+Before you begin, ensure you have the following:
 
-### 1. Prerequisites
+- **Node.js 22+** and **pnpm 9+** installed.
+- A **GitHub App** created and installed on your organization/account.
+  - **Permissions**: `Actions (Read)`, `Contents (Write)`, `Metadata (Read-only)`.
+  - **Events**: `Workflow run` (Completed).
+- An **API Key** from one of the supported LLM providers (e.g., [Cerebras](https://cloud.cerebras.ai/)).
+- A **Cloudflare Account** (Free tier is sufficient).
+- **GitHub CLI (gh)** installed and authenticated (`gh auth login`).
 
-- Node.js 22+
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) (`npm install -g wrangler`)
-- A [Cloudflare account](https://dash.cloudflare.com/sign-up)
-- A [GitHub App](https://docs.github.com/en/apps/creating-github-apps) with `actions:read` and `contents:write` permissions
+---
 
-### 2. Install
+## 🛠️ Installation
+
+1.  **Clone the Management Repository**:
+    ```bash
+    git clone https://github.com/chirag127/github-actions-ai-auto-debugger.git
+    cd github-actions-ai-auto-debugger
+    ```
+
+2.  **Install Dependencies**:
+    ```bash
+    pnpm install
+    ```
+
+---
+
+## 🔐 Environment Variable Setup
+
+1.  **Initialize the `.env` file**:
+    ```bash
+    cp .env.example .env
+    ```
+
+2.  **Configure your variables**:
+    Refer to the detailed instructions inside the `.env` file for each setting.
+
+3.  **Sync Secrets to GitHub**:
+    Automatically deploy your `.env` values to GitHub Repository Secrets:
+    ```powershell
+    # Windows (PowerShell)
+    ./scripts/sync-secrets.ps1
+    ```
+
+### Configuration Table
+
+| Variable | Description | Source |
+| :--- | :--- | :--- |
+| `GH_APP_ID` | Your GitHub App ID | GitHub Settings |
+| `GH_APP_PRIVATE_KEY` | PEM private key for the App | GitHub Settings |
+| `WEBHOOK_SECRET` | Secret for HMAC verification | GitHub Settings |
+| `GH_TOKEN` | PAT with `actions:write` on this repo | GitHub Settings |
+| `AI_PROVIDER` | Chosen LLM provider name | LLM Dashboard |
+| `AI_API_KEY` | API Key for the provider | LLM Dashboard |
+
+---
+
+## 🗄️ Database Migrations
+
+This application is **entirely stateless**. It stores no persistent data and therefore requires **zero database migrations**. All processing is done in-memory within the GitHub Action runner and Cloudflare Worker.
+
+---
+
+## 🚀 Running the App
+
+### Local Development
+To test the AI repair pipeline locally without triggering a GitHub webhook:
+1. Fill in the `TARGET_REPO_OWNER`, `TARGET_RUN_ID`, etc., in your `.env`.
+2. Run the entry point:
+   ```bash
+   node src/index.js
+   ```
+
+### Production Deployment
+1. **Deploy the Proxy**:
+   ```bash
+   pnpm run deploy
+   ```
+2. **Point the App**:
+   Update your GitHub App's "Webhook URL" to the Cloudflare Worker URL provided by the deployment.
+
+---
+
+## 🧪 Running Tests
+
+We use **Vitest** for a comprehensive testing suite that covers the AI pipeline, GitHub API client, and signature verification.
 
 ```bash
-npm install
+# Run all tests
+pnpm test
+
+# Run tests with coverage
+pnpm run test:coverage
+
+# Lint and format
+pnpm run lint
+pnpm run format
 ```
 
-### 3. Create CF Queues
+---
 
-```bash
-wrangler queues create ai-auto-debugger-queue
-wrangler queues create ai-debugger-dlq
-```
+## 📦 Deployment
 
-### 4. Configure Secrets
+### Cloudflare Proxy
+Managed via `Wrangler`. Deployment is automated on every push to `main` via the **Deploy Proxy Worker** workflow.
 
-```bash
-wrangler secret put WEBHOOK_SECRET
-wrangler secret put GITHUB_APP_ID
-wrangler secret put GITHUB_PRIVATE_KEY
-wrangler secret put AI_PROVIDER
-wrangler secret put AI_MODEL
-wrangler secret put CEREBRAS_API_KEY   # or whichever provider you use
-wrangler secret put LANGFUSE_PUBLIC_KEY
-wrangler secret put LANGFUSE_SECRET_KEY
-wrangler secret put LANGFUSE_BASE_URL
-```
+### GitHub Action
+The repair engine is bundled into `dist/index.js` via **Rollup**. Ensure you commit the `dist` folder so GitHub can run the action without building it on every trigger.
 
-### 5. Deploy
+---
 
-```bash
-npm run deploy
-```
+## 🛠️ Additional Tools
 
-The Worker will be available at `https://ai-auto-debugger.<subdomain>.workers.dev`.
+- **Wrangler**: Use `pnpm dlx wrangler tail` to monitor live logs from your Proxy Worker.
+- **GitHub CLI**: Use `gh secret list` to verify your synchronized secrets.
+- **Biome**: Modern, high-performance linter and formatter used to enforce code quality.
 
-### 6. Update GitHub App
+---
 
-Set your GitHub App's webhook URL to:
-```
-https://ai-auto-debugger.<subdomain>.workers.dev/webhook
-```
-
-## LLM Providers
-
-| Provider | Env Key | Default Model |
-|----------|---------|---------------|
-| Cerebras | `CEREBRAS_API_KEY` | `qwen-3-235b-a22b-instruct-2507` |
-| Groq | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
-| Mistral | `MISTRAL_API_KEY` | `mistral-large-latest` |
-| Google Gemini | `GOOGLE_API_KEY` | `gemini-2.0-flash` |
-| NVIDIA | `NVIDIA_API_KEY` | `meta/llama-3.1-8b-instruct` |
-| Cohere | `COHERE_API_KEY` | `command-r-plus` |
-| HuggingFace | `HUGGINGFACE_API_KEY` | `Qwen/Qwen2.5-Coder-32B-Instruct` |
-| OpenRouter | `OPENROUTER_API_KEY` | `meta-llama/llama-3-70b-instruct` |
-| GitHub Models | `GITHUB_MODELS_TOKEN` | `gpt-4o` |
-
-## Development
-
-```bash
-# Run locally
-npm run dev
-
-# Run tests
-npm test
-
-# Lint
-npm run lint
-
-# Format
-npm run format
-```
-
-## Testing Your Deployment
-
-```bash
-python scripts/test-webhook.py https://ai-auto-debugger.<subdomain>.workers.dev/webhook <your_webhook_secret>
-```
-
-## CF Workers Free Plan Limits
-
-| Resource | Free Plan |
-|----------|-----------|
-| HTTP requests | 100,000/day |
-| Queue operations | 10,000,000/month |
-| HTTP handler CPU | 10ms |
-| Queue consumer CPU | Unlimited |
-| Queue consumer wall time | 15 minutes |
-
-## License
-
-MIT
-
+## 📜 License
+MIT © [chirag127](https://github.com/chirag127)

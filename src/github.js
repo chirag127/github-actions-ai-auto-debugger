@@ -28,7 +28,8 @@ export async function getInstallationToken(jwt, installationId) {
 	});
 
 	if (!res.ok) {
-		throw new Error(`GitHub API error: ${res.status} ${await res.text()}`);
+		const errorText = await res.text();
+		throw new Error(`GitHub API error: ${res.status} ${errorText}`);
 	}
 
 	const data = await res.json();
@@ -66,6 +67,8 @@ export async function getWorkflowLogs(token, owner, repo, runId) {
 			const unzipped = unzipSync(new Uint8Array(buffer));
 			let logs = "";
 			for (const [filename, content] of Object.entries(unzipped)) {
+				// Skip non-log files if any
+				if (!filename.endsWith(".txt") && !filename.includes("/")) continue;
 				logs += `[${filename}]\n${new TextDecoder().decode(content)}\n\n`;
 			}
 			return logs.slice(0, 15000);
@@ -103,7 +106,8 @@ export async function getFileContent(token, owner, repo, path, ref) {
 
 	const data = await res.json();
 	if (data.content) {
-		return atob(data.content);
+		// Node.js 22 has global atob
+		return atob(data.content.replace(/\n/g, ""));
 	}
 	return "";
 }
@@ -158,7 +162,14 @@ export async function commitFile(
 ) {
 	const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
-	await fetch(url, {
+	// Node.js 22 has global btoa
+	const encodedContent = btoa(
+		new TextEncoder()
+			.encode(content)
+			.reduce((s, b) => s + String.fromCharCode(b), ""),
+	);
+
+	const res = await fetch(url, {
 		method: "PUT",
 		headers: {
 			...GH_HEADERS,
@@ -167,13 +178,14 @@ export async function commitFile(
 		},
 		body: JSON.stringify({
 			message,
-			content: btoa(
-				new TextEncoder()
-					.encode(content)
-					.reduce((s, b) => s + String.fromCharCode(b), ""),
-			),
+			content: encodedContent,
 			sha,
 			branch,
 		}),
 	});
+
+	if (!res.ok) {
+		const errorText = await res.text();
+		console.error(`Failed to commit ${path}: ${res.status} ${errorText}`);
+	}
 }

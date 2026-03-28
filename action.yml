@@ -1,0 +1,47 @@
+name: "AI Auto-Debugger"
+description: "Automatically analyzes and fixes failed GitHub Actions workflows using AI."
+author: "chirag127"
+branding:
+  icon: "zap"
+  color: "orange"
+
+inputs:
+  ai-provider:
+    description: "AI Provider (e.g., cerebras, groq, mistral, google_gemini, nvidia)"
+    required: false
+    default: "cerebras"
+  ai-model:
+    description: "Specific LLM model to use (leave empty for provider default)"
+    required: false
+    default: ""
+  ai-api-key:
+    description: "API Key for the chosen provider"
+    required: true
+  gh-app-id:
+    description: "GitHub App ID"
+    required: true
+  gh-app-private-key:
+    description: "GitHub App Private Key (PEM format)"
+    required: true
+  target-repo-owner:
+    description: "Owner of the repo to debug"
+    required: true
+  target-repo-name:
+    description: "Name of the repo to debug"
+    required: true
+  target-run-id:
+    description: "Workflow run ID to debug"
+    required: true
+  target-installation-id:
+    description: "GitHub App installation ID"
+    required: true
+  target-head-sha:
+    description: "Head SHA of the failed run"
+    required: true
+  target-branch:
+    description: "Branch of the failed run"
+    required: true
+
+runs:
+  using: "node20"
+  main: "dist/index.js"

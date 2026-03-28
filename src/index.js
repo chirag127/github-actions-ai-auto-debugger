@@ -1,105 +1,64 @@
 /**
- * Cloudflare Worker entry point.
- * Handles GitHub webhooks and processes AI debug jobs via CF Queues.
+ * Standalone entry point for the Centralized AI Auto-Debugger.
+ * Triggered by the GitHub Action workflow_dispatch.
  */
 
 import { runDebugPipeline } from "./agent.js";
-import { verifySignature } from "./verify.js";
 
-export default {
-	/**
-	 * HTTP handler — receives GitHub webhooks.
-	 * Verifies signature, filters events, enqueues to DEBUG_QUEUE.
-	 */
-	async fetch(request, env, ctx) {
-		const url = new URL(request.url);
+async function main() {
+	console.log("--- STARTING CENTRALIZED AI DEBUGGER ---");
 
-		// Health check
-		if (request.method === "GET" && url.pathname === "/health") {
-			return new Response("OK", { status: 200 });
-		}
+	const env = {
+		// AI Provider
+		AI_PROVIDER: process.env.AI_PROVIDER,
+		AI_MODEL: process.env.AI_MODEL,
+		CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY,
+		GROQ_API_KEY: process.env.GROQ_API_KEY,
+		NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
+		GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+		MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
+		COHERE_API_KEY: process.env.COHERE_API_KEY,
+		OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+		HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY,
+		GH_MODELS_TOKEN: process.env.GH_MODELS_TOKEN,
 
-		// Only accept POST /webhook
-		if (request.method !== "POST" || url.pathname !== "/webhook") {
-			return new Response("Not Found", { status: 404 });
-		}
+		// GitHub App Auth
+		GH_APP_ID: process.env.GH_APP_ID,
+		GH_APP_PRIVATE_KEY: process.env.GH_APP_PRIVATE_KEY,
 
-		// Read body as ArrayBuffer for signature verification
-		const bodyBuffer = await request.arrayBuffer();
-		const signature = request.headers.get("X-Hub-Signature-256") || "";
-		const secret = env.WEBHOOK_SECRET || "testsecret";
+		// Langfuse (optional)
+		LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY,
+		LANGFUSE_SECRET_KEY: process.env.LANGFUSE_SECRET_KEY,
+		LANGFUSE_BASE_URL: process.env.LANGFUSE_BASE_URL,
+	};
 
-		const isValid = await verifySignature(secret, bodyBuffer, signature);
-		if (!isValid) {
-			return new Response(JSON.stringify({ error: "Invalid signature" }), {
-				status: 401,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
+	const payload = {
+		repository: {
+			owner: { login: process.env.TARGET_REPO_OWNER },
+			name: process.env.TARGET_REPO_NAME,
+		},
+		workflow_run: {
+			id: Number.parseInt(process.env.TARGET_RUN_ID),
+			head_sha: process.env.TARGET_HEAD_SHA,
+			head_branch: process.env.TARGET_BRANCH,
+		},
+		installation: {
+			id: Number.parseInt(process.env.TARGET_INSTALLATION_ID),
+		},
+	};
 
-		// Filter by event type
-		const event = request.headers.get("X-GitHub-Event");
-		if (event !== "workflow_run") {
-			return new Response(JSON.stringify({ message: "Ignored event" }), {
-				status: 200,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
+	if (!payload.repository.owner.login || !payload.repository.name) {
+		console.error("Missing target repository details.");
+		process.exit(1);
+	}
 
-		// Parse payload
-		let payload;
-		try {
-			payload = JSON.parse(new TextDecoder().decode(bodyBuffer));
-		} catch (e) {
-			return new Response(JSON.stringify({ error: "Invalid payload" }), {
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
+	try {
+		await runDebugPipeline(env, payload);
+		console.log("--- CENTRALIZED AI DEBUGGER COMPLETED ---");
+	} catch (error) {
+		console.error(`--- AI DEBUGGER FAILED: ${error.message} ---`);
+		process.exit(1);
+	}
+}
 
-		// Filter: only completed failures
-		if (
-			payload.action !== "completed" ||
-			payload.workflow_run?.conclusion !== "failure"
-		) {
-			return new Response(JSON.stringify({ message: "Ignored run" }), {
-				status: 200,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
-
-		// Reject bot senders
-		if (payload.sender?.login?.includes("[bot]")) {
-			return new Response(JSON.stringify({ message: "Ignored bot sender" }), {
-				status: 200,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
-
-		// Enqueue for background processing
-		await env.DEBUG_QUEUE.send(payload);
-
-		return new Response(JSON.stringify({ message: "Accepted" }), {
-			status: 202,
-			headers: { "Content-Type": "application/json" },
-		});
-	},
-
-	/**
-	 * Queue consumer — processes debug jobs with unlimited CPU time.
-	 */
-	async queue(batch, env) {
-		for (const message of batch.messages) {
-			try {
-				console.log(
-					`--- STARTING AI AGENT FOR RUN ${message.body.workflow_run?.id} ---`,
-				);
-				await runDebugPipeline(env, message.body);
-				message.ack();
-			} catch (e) {
-				console.log(`--- AI AGENT FAILED: ${e.message} ---`);
-				message.retry();
-			}
-		}
-	},
-};
+main();

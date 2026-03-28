@@ -1,25 +1,45 @@
 # Dependencies
 node_modules/
 
-# Cloudflare Workers
-.wrangler/
+# Build output
 dist/
 
-# Environment
+# Cloudflare Workers
+.wrangler/
+
+# Environment variables
 .env
 .env.local
+.env.*.local
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# IDE
+# IDE / Editor
 .idea/
 .vscode/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# Test
+# Test / Coverage
 coverage/
 .vitest/
-ai-github-actions-auto-debugger.2026-03-26.private-key.pem
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+tmp/
+*.tmp
+*.temp
+
+# Private keys
+*.pem
+
+# CommitSage / Agent configs with personal settings
+.commitsage

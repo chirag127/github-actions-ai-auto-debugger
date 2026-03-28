@@ -1,0 +1,82 @@
+name: AI Auto-Debugger (Centralized)
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_owner:
+        description: 'Owner of the failed repo'
+        required: true
+      repo_name:
+        description: 'Name of the failed repo'
+        required: true
+      run_id:
+        description: 'ID of the failed workflow run'
+        required: true
+      installation_id:
+        description: 'Installation ID of the GitHub App'
+        required: true
+      head_sha:
+        description: 'Head SHA of the failed workflow run'
+        required: true
+      branch:
+        description: 'Branch of the failed workflow run'
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        continue-on-error: true
+
+      - name: Run AI Debugger
+        env:
+          # AI Provider Configuration
+          AI_PROVIDER: ${{ vars.AI_PROVIDER }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+          GITHUB_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
+          
+          # GitHub App Authentication
+          GITHUB_APP_ID: ${{ secrets.GH_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          
+          # Target Repository Info
+          TARGET_REPO_OWNER: ${{ github.event.inputs.repo_owner }}
+          TARGET_REPO_NAME: ${{ github.event.inputs.repo_name }}
+          TARGET_RUN_ID: ${{ github.event.inputs.run_id }}
+          TARGET_INSTALLATION_ID: ${{ github.event.inputs.installation_id }}
+          TARGET_HEAD_SHA: ${{ github.event.inputs.head_sha }}
+          TARGET_BRANCH: ${{ github.event.inputs.branch }}
+          
+          # Langfuse Traceability (optional)
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+        run: node src/index.js
+        continue-on-error: true

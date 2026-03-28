@@ -1,4 +1,4 @@
-name: Deploy Worker
+name: Deploy Proxy Worker
 
 on:
   push:
@@ -6,17 +6,25 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to Cloudflare
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: "pnpm"
 
-      - run: npm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        continue-on-error: true
 
       - uses: cloudflare/wrangler-action@v3
         with:
@@ -24,6 +32,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           secrets: |
             WEBHOOK_SECRET
+            GITHUB_TOKEN
             GH_APP_ID
             GH_APP_PRIVATE_KEY
             AI_PROVIDER
@@ -42,6 +51,7 @@ jobs:
             LANGFUSE_BASE_URL
         env:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_APP_ID: ${{ secrets.GH_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
           AI_PROVIDER: ${{ secrets.AI_PROVIDER }}
@@ -58,3 +68,4 @@ jobs:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+        continue-on-error: true
