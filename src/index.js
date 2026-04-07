@@ -75,8 +75,8 @@ function getEnvFromProcess() {
 		GITHUB_MODELS_TOKEN: process.env.GITHUB_MODELS_TOKEN,
 
 		// GitHub App Auth
-		GH_APP_ID: process.env.GITHUB_APP_ID,
-		GH_APP_PRIVATE_KEY: process.env.GITHUB_APP_PRIVATE_KEY,
+		GH_APP_ID: process.env.GH_APP_ID,
+		GH_APP_PRIVATE_KEY: process.env.GH_APP_PRIVATE_KEY,
 
 		// Langfuse (optional)
 		LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY,
