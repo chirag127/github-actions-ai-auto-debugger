@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output — dist/ is committed (required by action.yml)
+# dist/
 
 # Cloudflare Workers
 .wrangler/
@@ -43,3 +43,7 @@ tmp/
 
 # CommitSage / Agent configs with personal settings
 .commitsage
+
+# Gemini CLI settings
+.gemini/
+gha-creds-*.json
