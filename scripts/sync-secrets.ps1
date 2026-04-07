@@ -73,12 +73,6 @@ Get-Content ".env" | ForEach-Object {
     Write-Host "  SET secret: $secretName" -ForegroundColor Gray
     $value | gh secret set $secretName --repo $Repo 2>$null
     if ($LASTEXITCODE -eq 0) { $synced++ }
-
-    # Sync to Cloudflare Worker (if wrangler is available)
-    if ($null -ne (Get-Command "wrangler" -ErrorAction SilentlyContinue)) {
-        Write-Host "  SET CF secret: $key (worker: $Worker)" -ForegroundColor DarkGray
-        $value | wrangler secret put $key --name $Worker 2>$null
-    }
 }
 
 Write-Host ""
